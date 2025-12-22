@@ -7,8 +7,17 @@ plugins {
 }
 
 group = "yk.projects"
-version = property("yk.projects.version").toString()
 description = "spring-boot-jenkins"
+
+
+val isRelease = project.hasProperty("release")
+
+version = if (isRelease) {
+    property("yk.projects.version").toString()
+} else {
+    property("yk.projects.version").toString() + "-SNAPSHOT"
+}
+
 
 java {
     toolchain {
@@ -72,7 +81,28 @@ publishing {
             }
         }
     }
+
+    repositories {
+        maven {
+            name = "nexusSnapshots"
+            url = uri("http://nexus:8081/repository/maven-snapshots/")
+            credentials {
+                username = findProperty("nexusUsername") as String? ?: ""
+                password = findProperty("nexusPassword") as String? ?: ""
+            }
+        }
+        maven {
+            name = "nexusReleases"
+            url = uri("http://nexus:8081/repository/maven-releases/")
+            credentials {
+                username = findProperty("nexusUsername") as String? ?: ""
+                password = findProperty("nexusPassword") as String? ?: ""
+            }
+        }
+    }
 }
+
+
 
 tasks.register("publishToNexus") {
     dependsOn("build")
