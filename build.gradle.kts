@@ -74,22 +74,23 @@ publishing {
     }
 }
 
-// --------------------
-// Task to publish to correct Nexus repo based on version
-// --------------------
-val publishTask = if (version.toString().endsWith("SNAPSHOT")) {
-    tasks.named("publishMavenJavaPublicationToNexusSnapshotsRepository")
-} else {
-    tasks.named("publishMavenJavaPublicationToNexusReleasesRepository")
-}
-
 tasks.register("publishToNexus") {
     dependsOn("build")
-    dependsOn(publishTask)
-    doLast {
-        println("Published version $version")
+
+    doFirst {
+        val isSnapshot = project.version.toString().endsWith("SNAPSHOT")
+
+        val publishTaskName = if (isSnapshot) {
+            "publishMavenJavaPublicationToNexusSnapshotsRepository"
+        } else {
+            "publishMavenJavaPublicationToNexusReleasesRepository"
+        }
+
+        dependsOn(publishTaskName)
+        println("Publishing version $version using $publishTaskName")
     }
 }
+
 
 // --------------------
 // SonarQube configuration
