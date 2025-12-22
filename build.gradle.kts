@@ -9,6 +9,20 @@ plugins {
 group = "yk.projects"
 description = "spring-boot-jenkins"
 
+/**
+ * Version handling
+ * Base version comes from gradle.properties
+ * -Prelease controls SNAPSHOT vs release
+ */
+val baseVersion = findProperty("yk.projects.version")?.toString()
+    ?: error("Missing required property: yk.projects.version")
+
+version = if (project.hasProperty("release")) {
+    baseVersion
+} else {
+    "$baseVersion-SNAPSHOT"
+}
+
 // --------------------
 // Java
 // --------------------
