@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: spring-boot-jenkins
+
+  datasource:
+    url: jdbc:h2:mem:spring_boot_jenkins_db
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+server:
+  port: 8090
