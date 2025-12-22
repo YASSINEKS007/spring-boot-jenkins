@@ -2,8 +2,8 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.9"
     id("io.spring.dependency-management") version "1.1.7"
-    `maven-publish` // Needed for publishing to Nexus
-    id("org.sonarqube") version "4.3.0.3225" // For SonarQube analysis
+    `maven-publish`
+    id("org.sonarqube") version "4.3.0.3225"
 }
 
 group = "yk.projects"
@@ -12,7 +12,7 @@ description = "spring-boot-jenkins"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
@@ -26,6 +26,18 @@ configurations {
     }
 }
 
+// --------------------
+// Dependency Management (Spring BOM)
+// --------------------
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.boot:spring-boot-dependencies:3.5.9")
+    }
+}
+
+// --------------------
+// Dependencies
+// --------------------
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -42,13 +54,12 @@ tasks.withType<Test> {
 }
 
 // --------------------
-// Nexus Publishing
+// Maven Publishing
 // --------------------
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-
             groupId = project.group.toString()
             artifactId = "spring-boot-jenkins"
             version = project.version.toString()
@@ -56,7 +67,6 @@ publishing {
     }
 
     repositories {
-        // Snapshot repository
         maven {
             name = "nexusSnapshots"
             url = uri("http://nexus:8081/repository/maven-snapshots/")
@@ -65,8 +75,6 @@ publishing {
                 password = findProperty("nexusPassword") as String? ?: ""
             }
         }
-
-        // Release repository
         maven {
             name = "nexusReleases"
             url = uri("http://nexus:8081/repository/maven-releases/")
@@ -79,7 +87,7 @@ publishing {
 }
 
 // --------------------
-// Task to publish to correct Nexus repo
+// Task to publish to correct Nexus repo based on version
 // --------------------
 val publishTask = if (version.toString().endsWith("SNAPSHOT")) {
     tasks.named("publishMavenJavaPublicationToNexusSnapshotsRepository")
@@ -101,7 +109,8 @@ tasks.register("publishToNexus") {
 sonarqube {
     properties {
         property("sonar.projectKey", "spring-boot-jenkins")
-        property("sonar.host.url", findProperty("sonarHostUrl") ?: "http://sonarqube:9000")
+        property("sonar.projectName", "spring-boot-jenkins")
+        property("sonar.host.url", findProperty("sonarHostUrl") ?: "http://host.docker.internal:9000")
         property("sonar.login", findProperty("sonarToken") ?: "")
     }
 }
