@@ -60,27 +60,15 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
+
             groupId = project.group.toString()
             artifactId = "spring-boot-jenkins"
             version = project.version.toString()
-        }
-    }
 
-    repositories {
-        maven {
-            name = "nexusSnapshots"
-            url = uri("http://nexus:8081/repository/maven-snapshots/")
-            credentials {
-                username = findProperty("nexusUsername") as String? ?: ""
-                password = findProperty("nexusPassword") as String? ?: ""
-            }
-        }
-        maven {
-            name = "nexusReleases"
-            url = uri("http://nexus:8081/repository/maven-releases/")
-            credentials {
-                username = findProperty("nexusUsername") as String? ?: ""
-                password = findProperty("nexusPassword") as String? ?: ""
+            versionMapping {
+                allVariants {
+                    fromResolutionResult()
+                }
             }
         }
     }
