@@ -23,12 +23,18 @@ version = if (project.hasProperty("release")) {
     "$baseVersion-SNAPSHOT"
 }
 
+// --------------------
+// Java
+// --------------------
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
+// --------------------
+// Repositories
+// --------------------
 repositories {
     mavenCentral()
 }
@@ -59,6 +65,9 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// --------------------
+// Tests
+// --------------------
 tasks.withType<Test> {
     useJUnitPlatform()
 }
@@ -67,6 +76,7 @@ tasks.withType<Test> {
 // Maven Publishing
 // --------------------
 publishing {
+
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
@@ -84,29 +94,39 @@ publishing {
     }
 
     repositories {
-        maven {
-            name = "nexusSnapshots"
-            url = uri("http://nexus:8081/repository/maven-snapshots/")
-            isAllowInsecureProtocol  = true
-            credentials {
-                username = findProperty("nexusUsername") as String?
-                password = findProperty("nexusPassword") as String?
+
+        val nexusUsername = providers.gradleProperty("nexusUsername")
+            .orElse(providers.environmentVariable("NEXUS_USERNAME"))
+
+        val nexusPassword = providers.gradleProperty("nexusPassword")
+            .orElse(providers.environmentVariable("NEXUS_PASSWORD"))
+
+        if (version.toString().endsWith("SNAPSHOT")) {
+            maven {
+                name = "nexusSnapshots"
+                url = uri("http://host.docker.internal:8081/repository/maven-snapshots/")
+                isAllowInsecureProtocol = true
+                credentials {
+                    username = nexusUsername.orNull
+                    password = nexusPassword.orNull
+                }
             }
-        }
-        maven {
-            name = "nexusReleases"
-            url = uri("http://nexus:8081/repository/maven-releases/")
-            isAllowInsecureProtocol  = true
-            credentials {
-                username = findProperty("nexusUsername") as String?
-                password = findProperty("nexusPassword") as String?
+        } else {
+            maven {
+                name = "nexusReleases"
+                url = uri("http://host.docker.internal:8081/repository/maven-releases/")
+                isAllowInsecureProtocol = true
+                credentials {
+                    username = nexusUsername.orNull
+                    password = nexusPassword.orNull
+                }
             }
         }
     }
 }
 
 // --------------------
-// SonarQube configuration
+// SonarQube
 // --------------------
 sonarqube {
     properties {
