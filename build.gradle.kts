@@ -2,10 +2,12 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.9"
     id("io.spring.dependency-management") version "1.1.7"
+    `maven-publish` // Needed for publishing to Nexus
+    id("org.sonarqube") version "4.3.0.3225" // For SonarQube analysis
 }
 
 group = "yk.projects"
-version = "0.0.1-SNAPSHOT"
+version = property("yk.projects.version").toString()
 description = "spring-boot-jenkins"
 
 java {
@@ -14,14 +16,14 @@ java {
     }
 }
 
+repositories {
+    mavenCentral()
+}
+
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
     }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
@@ -37,4 +39,69 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// --------------------
+// Nexus Publishing
+// --------------------
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+
+            groupId = project.group.toString()
+            artifactId = "spring-boot-jenkins"
+            version = project.version.toString()
+        }
+    }
+
+    repositories {
+        // Snapshot repository
+        maven {
+            name = "nexusSnapshots"
+            url = uri("http://nexus:8081/repository/maven-snapshots/")
+            credentials {
+                username = findProperty("nexusUsername") as String? ?: ""
+                password = findProperty("nexusPassword") as String? ?: ""
+            }
+        }
+
+        // Release repository
+        maven {
+            name = "nexusReleases"
+            url = uri("http://nexus:8081/repository/maven-releases/")
+            credentials {
+                username = findProperty("nexusUsername") as String? ?: ""
+                password = findProperty("nexusPassword") as String? ?: ""
+            }
+        }
+    }
+}
+
+// --------------------
+// Task to publish to correct Nexus repo
+// --------------------
+val publishTask = if (version.toString().endsWith("SNAPSHOT")) {
+    tasks.named("publishMavenJavaPublicationToNexusSnapshotsRepository")
+} else {
+    tasks.named("publishMavenJavaPublicationToNexusReleasesRepository")
+}
+
+tasks.register("publishToNexus") {
+    dependsOn("build")
+    dependsOn(publishTask)
+    doLast {
+        println("Published version $version")
+    }
+}
+
+// --------------------
+// SonarQube configuration
+// --------------------
+sonarqube {
+    properties {
+        property("sonar.projectKey", "spring-boot-jenkins")
+        property("sonar.host.url", findProperty("sonarHostUrl") ?: "http://sonarqube:9000")
+        property("sonar.login", findProperty("sonarToken") ?: "")
+    }
 }
