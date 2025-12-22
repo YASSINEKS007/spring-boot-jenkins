@@ -87,6 +87,13 @@ publishing {
 }
 
 // --------------------
+// Suppress BOM version validation
+// --------------------
+tasks.withType<GenerateMavenMetadata> {
+    suppressedValidations = listOf("dependencies-without-versions")
+}
+
+// --------------------
 // Task to publish to correct Nexus repo based on version
 // --------------------
 val publishTask = if (version.toString().endsWith("SNAPSHOT")) {
